@@ -26,9 +26,16 @@ struct buf_per_obj
 	XMFLOAT4 lightVec;
 };
 
+struct Material
+{
+	ComPtr<ID3D11ShaderResourceView> diffuse;
+	ComPtr<ID3D11ShaderResourceView> normal;
+	ComPtr<ID3D11ShaderResourceView> specular;
+	ComPtr<ID3D11ShaderResourceView> gloss_map;
+};
+
 HRESULT CreateTexture(ID3D11Device1*, const Mesh&, const TextureID&, ID3D11ShaderResourceView**);
 void DisplayFPS(const Timer&, const std::wstring&, const HWND&);
-void RenderModel();
 
 class Converter : public Core
 {
@@ -58,34 +65,27 @@ private:
 	bool LoadTextures();
 	void InitializeInputLayout();
 	void InitializeBuffers();
+	void RenderModels(const size_t&);
 
-	ComPtr<ID3D11Buffer>			m_vertexBuffer;
-	ComPtr<ID3D11Buffer>			m_indexBuffer;
-	ComPtr<ID3D11Buffer>			m_cbPerObj;
-	ComPtr<ID3D11Buffer>			m_cbPerFrame;
+	ComPtr<ID3D11Buffer>		m_vertexBuffer;
+	ComPtr<ID3D11Buffer>		m_indexBuffer;
+	ComPtr<ID3D11Buffer>		m_cbPerObj;
+	ComPtr<ID3D11Buffer>		m_cbPerFrame;
 
-	ComPtr<ID3D11InputLayout>		m_inputLayout;
-	ComPtr<ID3D11VertexShader>		m_vertexShader;
-	ComPtr<ID3D11PixelShader>		m_pixelShader;
-	ComPtr<ID3D11SamplerState>		m_samplerState;
+	ComPtr<ID3D11InputLayout>	m_inputLayout;
+	ComPtr<ID3D11VertexShader>	m_vertexShader;
+	ComPtr<ID3D11PixelShader>	m_pixelShader;
+	ComPtr<ID3D11SamplerState>	m_samplerState;
 
-	ComPtr<ID3D11ShaderResourceView> m_diffuse;
-	ComPtr<ID3D11ShaderResourceView> m_normal;
-	ComPtr<ID3D11ShaderResourceView> m_specular;
-	ComPtr<ID3D11ShaderResourceView> m_gloss_map;
-	//ComPtr<ID3D11ShaderResourceView> m_mask;
-	ComPtr<ID3D11ShaderResourceView> m_environment;
-	ComPtr<ID3D11ShaderResourceView> m_ambitexture;
+	Camera						m_camera;
+	Mesh						m_mesh;
+	std::vector<Material>		m_material;
 
-	Camera							m_camera;
-	Mesh							m_mesh;
-
-
-	std::wstring					m_execPath;
-	UINT							m_vsize;
-	UINT							m_isize;
-	POINT							m_lastMousePos;
-
+	std::wstring				m_execPath;
+	UINT						m_vsize;
+	UINT						m_isize;
+	UINT						m_modelsCount;
+	POINT						m_lastMousePos;
 };
 
 int WINAPI wWinMain(_In_ HINSTANCE hInstance, _In_opt_ HINSTANCE hPrevInstance, _In_ LPWSTR lpCmdLine, _In_ int nCmdShow)
@@ -120,9 +120,11 @@ Converter::Converter(HINSTANCE hInstance) :
 	m_samplerState(nullptr),
 
 	m_vsize(0),
-	m_isize(0)
+	m_isize(0),
+	m_modelsCount(1)
 {
 	m_wndCaption = L"RMV2 Converter v2.0";
+	m_material.resize(0);
 
 	m_lastMousePos.x = 0;
 	m_lastMousePos.y = 0;
@@ -161,6 +163,9 @@ void Converter::ReadFile(std::wstring filename)
 	SetWindowTextW(m_hWnd, (m_wndCaption + L"    " + wfilename).c_str());
 #endif
 
+	if (m_material.size() > 0)
+		m_material.resize(0);
+
 	if (!m_mesh.read_file(filename))
 	{
 		m_cbPerObj.Reset();
@@ -174,10 +179,11 @@ void Converter::ReadFile(std::wstring filename)
 		return;
 	}
 
+	m_modelsCount = m_mesh.GetGroupsCount(0);
+	m_camera.ResetPosition();
+
 	InitializeInputLayout();
 	InitializeBuffers();
-
-	m_camera.ResetPosition();
 }
 
 void Converter::ShowStats()
@@ -185,7 +191,7 @@ void Converter::ShowStats()
 	if (m_cbPerObj)
 	{
 		std::string output = "skeleton: " + m_mesh.GetSkeletonName() + "\n\n";
-		if (m_mesh.GetSkeletonName() == "")
+		if (m_mesh.GetSkeletonName().empty())
 			output = "skeleton: none\n\n";
 
 		size_t lodsCount = m_mesh.GetLodsCount();
@@ -215,6 +221,8 @@ void Converter::Update(const Timer& t)
 {
 #ifdef _DEBUG
 	DisplayFPS(t, m_wndCaption, m_hWnd);
+#else
+	UNREFERENCED_PARAMETER(t);
 #endif
 	m_camera.Update();
 }
@@ -259,17 +267,22 @@ void Converter::Render()
 
 		m_d3dContext->VSSetConstantBuffers(0, 1, m_cbPerObj.GetAddressOf());
 		m_d3dContext->PSSetConstantBuffers(0, 1, m_cbPerObj.GetAddressOf());
-		m_d3dContext->PSSetShaderResources(0, 1, m_diffuse.GetAddressOf());
-		m_d3dContext->PSSetShaderResources(1, 1, m_normal.GetAddressOf());
-		m_d3dContext->PSSetShaderResources(2, 1, m_gloss_map.GetAddressOf());
-		m_d3dContext->PSSetShaderResources(3, 1, m_specular.GetAddressOf());
-		//m_d3dContext->PSSetShaderResources(4, 1, m_mask.GetAddressOf());
-		m_d3dContext->PSSetShaderResources(5, 1, m_environment.GetAddressOf());
-		m_d3dContext->PSSetShaderResources(6, 1, m_ambitexture.GetAddressOf());
-		m_d3dContext->PSSetSamplers(0, 1, m_samplerState.GetAddressOf());
-		m_d3dContext->DrawIndexed(m_isize, 0, 0);
+
+		for (size_t modelNum = 0; modelNum < m_modelsCount; ++modelNum)
+			RenderModels(modelNum);
 	}
+
 	m_swapChain->Present(1, 0);
+}
+
+void Converter::RenderModels(const size_t& modelNum)
+{
+	m_d3dContext->PSSetShaderResources(0, 1, m_material[modelNum].diffuse.GetAddressOf());
+	m_d3dContext->PSSetShaderResources(1, 1, m_material[modelNum].normal.GetAddressOf());
+	m_d3dContext->PSSetShaderResources(2, 1, m_material[modelNum].gloss_map.GetAddressOf());
+	m_d3dContext->PSSetShaderResources(3, 1, m_material[modelNum].specular.GetAddressOf());
+	m_d3dContext->PSSetSamplers(0, 1, m_samplerState.GetAddressOf());
+	m_d3dContext->DrawIndexed(m_isize, 0, 0);
 }
 
 void Converter::OnMouseDown(WPARAM btnState, int x, int y)
@@ -319,46 +332,42 @@ void Converter::OnMouseScroll(WPARAM delta)
 
 bool Converter::LoadTextures()
 {
-	HRESULT hr = CreateTexture(m_d3dDevice.Get(), m_mesh, TextureID::t_albedo, &m_diffuse);
+	Material mat;
+
+	HRESULT hr = CreateTexture(m_d3dDevice.Get(), m_mesh, TextureID::t_albedo, &mat.diffuse);
 	if (FAILED(hr))
 	{
 		MessageBoxA(m_hWnd, "Warning: At least one of the textures was not found. Loading default textures.", "Textures not found", MB_OK);
-		hr = CreateDDSTextureFromFile(m_d3dDevice.Get(), (m_execPath + L"\\data\\resources\\textures\\test_gray.dds").c_str(), nullptr, &m_diffuse);
+		hr = CreateDDSTextureFromFile(m_d3dDevice.Get(), (m_execPath + L"\\data\\resources\\textures\\test_gray.dds").c_str(), nullptr, &mat.diffuse);
 			if (FAILED(hr))
 				return false;
 	}
 
-	hr = CreateTexture(m_d3dDevice.Get(), m_mesh, TextureID::t_normal, &m_normal);
+	hr = CreateTexture(m_d3dDevice.Get(), m_mesh, TextureID::t_normal, &mat.normal);
 	if (FAILED(hr))
 	{
-		hr = CreateDDSTextureFromFile(m_d3dDevice.Get(), (m_execPath + L"\\data\\resources\\textures\\flatnormal.dds").c_str(), nullptr, &m_normal);
+		hr = CreateDDSTextureFromFile(m_d3dDevice.Get(), (m_execPath + L"\\data\\resources\\textures\\flatnormal.dds").c_str(), nullptr, &mat.normal);
 		if (FAILED(hr))
 			return false;
 	}
 
-	hr = CreateTexture(m_d3dDevice.Get(), m_mesh, TextureID::t_specular, &m_specular);
+	hr = CreateTexture(m_d3dDevice.Get(), m_mesh, TextureID::t_specular, &mat.specular);
 	if (FAILED(hr))
 	{
-		hr = CreateDDSTextureFromFile(m_d3dDevice.Get(), (m_execPath + L"\\data\\resources\\textures\\test_gray.dds").c_str(), nullptr, &m_specular);
+		hr = CreateDDSTextureFromFile(m_d3dDevice.Get(), (m_execPath + L"\\data\\resources\\textures\\test_gray.dds").c_str(), nullptr, &mat.specular);
 		if (FAILED(hr))
 			return false;
 	}
 
-	hr = CreateTexture(m_d3dDevice.Get(), m_mesh, TextureID::t_gloss_map, &m_gloss_map);
+	hr = CreateTexture(m_d3dDevice.Get(), m_mesh, TextureID::t_gloss_map, &mat.gloss_map);
 	if (FAILED(hr))
 	{
-		hr = CreateDDSTextureFromFile(m_d3dDevice.Get(), (m_execPath + L"\\data\\resources\\textures\\test_gray.dds").c_str(), nullptr, &m_gloss_map);
+		hr = CreateDDSTextureFromFile(m_d3dDevice.Get(), (m_execPath + L"\\data\\resources\\textures\\test_gray.dds").c_str(), nullptr, &mat.gloss_map);
 		if (FAILED(hr))
 			return false;
 	}
 
-	hr = CreateDDSTextureFromFile(m_d3dDevice.Get(), (m_execPath + L"\\data\\resources\\textures\\environment.dds").c_str(), nullptr, &m_environment);
-	if (FAILED(hr))
-		return false;
-
-	hr = CreateDDSTextureFromFile(m_d3dDevice.Get(), (m_execPath + L"\\data\\resources\\textures\\ambi.dds").c_str(), nullptr, &m_ambitexture);
-	if (FAILED(hr))
-		return false;
+	m_material.push_back(mat);
 
 	D3D11_SAMPLER_DESC samplerDesc;
 	samplerDesc.Filter = D3D11_FILTER_MIN_MAG_MIP_LINEAR;
@@ -385,7 +394,7 @@ void Converter::InitializeInputLayout()
 	if (FAILED(result))
 		return;
 
-	result = D3DReadFileToBlob((m_execPath + L"\\data\\shaders\\custom_ps.cso").c_str(), &psbyteCode);
+	result = D3DReadFileToBlob((m_execPath + L"\\data\\shaders\\standard_ps.cso").c_str(), &psbyteCode);
 	if (FAILED(result))
 		return;
 
@@ -421,39 +430,23 @@ void Converter::InitializeBuffers()
 	std::vector<uint32_t> ind(m_isize);
 	size_t voffset = 0;
 	size_t ioffset = 0;
-	std::vector<Vertex> verticesArray;
-	std::vector<Triangle> indicesArray;
+	std::vector<Vertex> verticesArray(0);
+	std::vector<Triangle> indicesArray(0);
 
 	for (size_t groupNum = 0; groupNum < groupsCount; ++groupNum)
 	{
-		verticesArray.resize(0);
 		m_mesh.GetVerticesArray(static_cast<uint8_t>(lodNum), static_cast<uint8_t>(groupNum), &verticesArray);
 		for (size_t i = voffset; i < m_mesh.GetVerticesCountPerGroup(static_cast<uint8_t>(lodNum), static_cast<uint8_t>(groupNum)) + voffset; ++i)
 		{
-			v[i].Position.x = verticesArray[i - voffset].position.x;
-			v[i].Position.y = verticesArray[i - voffset].position.y;
-			v[i].Position.z = verticesArray[i - voffset].position.z;
-
-			v[i].Normal.x = verticesArray[i - voffset].normal.x;
-			v[i].Normal.y = verticesArray[i - voffset].normal.y;
-			v[i].Normal.z = verticesArray[i - voffset].normal.z;
-
-			v[i].Tangent.x = verticesArray[i - voffset].tangent.x;
-			v[i].Tangent.y = verticesArray[i - voffset].tangent.y;
-			v[i].Tangent.z = verticesArray[i - voffset].tangent.z;
-
-			v[i].Bitangent.x = verticesArray[i - voffset].bitangent.x;
-			v[i].Bitangent.y = verticesArray[i - voffset].bitangent.y;
-			v[i].Bitangent.z = verticesArray[i - voffset].bitangent.z;
-
-			v[i].TexCoord0.x = verticesArray[i - voffset].texCoord.x;
-			v[i].TexCoord0.y = verticesArray[i - voffset].texCoord.y;
-
-			v[i].TexCoord1.x = verticesArray[i - voffset].texCoord2.x;
-			v[i].TexCoord1.y = verticesArray[i - voffset].texCoord2.y;
+			std::swap(v[i].Position, verticesArray[i - voffset].position);
+			std::swap(v[i].Normal, verticesArray[i - voffset].normal);
+			std::swap(v[i].Tangent, verticesArray[i - voffset].tangent);
+			std::swap(v[i].Bitangent, verticesArray[i - voffset].bitangent);
+			std::swap(v[i].TexCoord0, verticesArray[i - voffset].texCoord);
+			std::swap(v[i].TexCoord1, verticesArray[i - voffset].texCoord2);
 		}
-		
-		indicesArray.resize(0);
+		verticesArray.resize(0);
+
 		m_mesh.GetIndicesArray(static_cast<uint8_t>(lodNum), static_cast<uint8_t>(groupNum), &indicesArray);
 		for (size_t j = ioffset; j < m_mesh.GetIndicesCountPerGroup(static_cast<uint8_t>(lodNum), static_cast<uint8_t>(groupNum)) / 3 + ioffset; ++j)
 		{
@@ -463,6 +456,7 @@ void Converter::InitializeBuffers()
 		}
 		voffset += m_mesh.GetVerticesCountPerGroup(static_cast<uint8_t>(lodNum), static_cast<uint8_t>(groupNum));
 		ioffset += m_mesh.GetIndicesCountPerGroup(static_cast<uint8_t>(lodNum), static_cast<uint8_t>(groupNum)) / 3;
+		indicesArray.resize(0);
 	}
 
 	D3D11_BUFFER_DESC vertexBuffer_desc = {};
@@ -514,7 +508,6 @@ void Converter::InitializeBuffers()
 
 HRESULT CreateTexture(ID3D11Device1* device, const Mesh& mesh, const TextureID& tID, ID3D11ShaderResourceView** texture)
 {
-	std::wstring ws = mesh.GetTexturePath(0, 0, tID);
 	return CreateDDSTextureFromFile(device, mesh.GetTexturePath(0, 0, tID).c_str(), nullptr, texture);
 }
 

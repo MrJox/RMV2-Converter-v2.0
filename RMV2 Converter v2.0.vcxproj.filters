@@ -70,16 +70,10 @@
     </ClCompile>
   </ItemGroup>
   <ItemGroup>
-    <FxCompile Include="shaders\standard_ps.hlsl">
-      <Filter>shaders</Filter>
-    </FxCompile>
     <FxCompile Include="shaders\standard_vs.hlsl">
       <Filter>shaders</Filter>
     </FxCompile>
-    <FxCompile Include="shaders\channel_ndotl_ps.hlsl">
-      <Filter>shaders</Filter>
-    </FxCompile>
-    <FxCompile Include="shaders\custom_ps.hlsl">
+    <FxCompile Include="shaders\standard_ps.hlsl">
       <Filter>shaders</Filter>
     </FxCompile>
   </ItemGroup>

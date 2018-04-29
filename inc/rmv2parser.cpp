@@ -20,7 +20,7 @@ Mesh::~Mesh()
 {
 }
 
-bool Mesh::read_file(std::wstring filename)
+bool Mesh::read_file(const std::wstring& filename)
 {
 	this->m_header.lodsCount = 0;
 	this->m_header.version = 0;
@@ -102,11 +102,14 @@ bool Mesh::read_file(std::wstring filename)
 					file.read(reinterpret_cast<char *>(&temp), 2);
 
 					vertexFormat.push_back(static_cast<uint16_t>(temp));
-					if (   vertexFormat[j] == 6
-						|| vertexFormat[j] == 11
-						|| vertexFormat[j] == 12	)
+					if (   vertexFormat[j]	== 6
+						|| vertexFormat[j]	== 11
+						|| vertexFormat[j]	== 12)
+					{
 						MessageBoxA(nullptr, "Trees, ropes and campaign vegetation are not yet supported!", "Error: Unsupported vertex format", MB_OK);
-					
+						return false;
+					}
+
 					file.read(reinterpret_cast<char *>(&group.groupName), sizeof(group.groupName));
 					file.seekg(514, ios_base::cur);
 					file.read(reinterpret_cast<char *>(&group.pivot.x), sizeof(group.pivot.x));

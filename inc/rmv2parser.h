@@ -147,7 +147,7 @@ public:
 	Mesh();
 	~Mesh();
 
-	bool read_file(std::wstring filename);
+	bool read_file(const std::wstring& filename);
 
 	inline std::string GetGroupName(uint8_t lodNum, uint8_t groupNum)const
 	{
