@@ -8,8 +8,10 @@ class Core
 protected:
 
 	Core(HINSTANCE hInstance);
-	Core(const Core& core) = delete;
-	Core& operator=(const Core& core) = delete;
+	Core(const Core&) = delete;
+	Core(Core&&) = delete;
+	Core& operator=(const Core&) = delete;
+	Core& operator=(Core&&) = delete;
 	virtual ~Core();
 
 	virtual bool Initialize();

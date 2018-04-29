@@ -27,14 +27,17 @@ struct buf_per_obj
 };
 
 HRESULT CreateTexture(ID3D11Device1*, const Mesh&, const TextureID&, ID3D11ShaderResourceView**);
-void displayFPS(const Timer&, const std::wstring&, const HWND&);
+void DisplayFPS(const Timer&, const std::wstring&, const HWND&);
+void RenderModel();
 
 class Converter : public Core
 {
 public:
 	Converter(HINSTANCE hInstance);
-	Converter(const Converter& Converter) = delete;
-	Converter& operator=(const Converter& Converter) = delete;
+	Converter(const Converter&) = delete;
+	Converter(Converter &&) = delete;
+	Converter& operator=(const Converter&) = delete;
+	Converter& operator=(Converter&&) = delete;
 	~Converter();
 
 	virtual bool Initialize()override;
@@ -76,6 +79,7 @@ private:
 
 	Camera							m_camera;
 	Mesh							m_mesh;
+
 
 	std::wstring					m_execPath;
 	UINT							m_vsize;
@@ -210,7 +214,7 @@ void Converter::ShowStats()
 void Converter::Update(const Timer& t)
 {
 #ifdef _DEBUG
-	displayFPS(t, m_wndCaption, m_hWnd);
+	DisplayFPS(t, m_wndCaption, m_hWnd);
 #endif
 	m_camera.Update();
 }
@@ -514,7 +518,7 @@ HRESULT CreateTexture(ID3D11Device1* device, const Mesh& mesh, const TextureID& 
 	return CreateDDSTextureFromFile(device, mesh.GetTexturePath(0, 0, tID).c_str(), nullptr, texture);
 }
 
-void displayFPS(const Timer& timer, const std::wstring& wndCaption, const HWND& hWnd)
+void DisplayFPS(const Timer& timer, const std::wstring& wndCaption, const HWND& hWnd)
 {
 	static int frameCnt = 0;
 	static float timeElapsed = 0.0f;
