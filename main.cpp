@@ -34,7 +34,7 @@ struct Material
 	ComPtr<ID3D11ShaderResourceView> gloss_map;
 };
 
-HRESULT CreateTexture(ID3D11Device1*, const Mesh&, const TextureID&, ID3D11ShaderResourceView**);
+HRESULT CreateTexture(ID3D11Device1*, const Mesh&, const uint8_t& groupNum, const TextureID&, ID3D11ShaderResourceView**);
 void DisplayFPS(const Timer&, const std::wstring&, const HWND&);
 
 class Converter : public Core
@@ -54,7 +54,7 @@ private:
 	virtual void OnResize(uint32_t width, uint32_t height)final;
 	virtual void Update(const Timer& timer)final;
 	virtual void Render()final;
-	virtual void ReadFile(std::wstring filename)final;
+	virtual void ReadFile(const std::wstring& filename)final;
 	virtual void ShowStats()final;
 
 	virtual void OnMouseDown(WPARAM btnState, int x, int y)final;
@@ -82,8 +82,8 @@ private:
 	std::vector<Material>		m_material;
 
 	std::wstring				m_execPath;
-	UINT						m_vsize;
-	UINT						m_isize;
+	std::vector<UINT>			m_offset;
+	std::vector<UINT>			m_indSize;
 	UINT						m_modelsCount;
 	POINT						m_lastMousePos;
 };
@@ -119,12 +119,14 @@ Converter::Converter(HINSTANCE hInstance) :
 	m_pixelShader(nullptr),
 	m_samplerState(nullptr),
 
-	m_vsize(0),
-	m_isize(0),
+	//m_vsize(0),
+	//m_isize(0),
 	m_modelsCount(1)
 {
 	m_wndCaption = L"RMV2 Converter v2.0";
 	m_material.resize(0);
+	m_offset.resize(0);
+	m_indSize.resize(0);
 
 	m_lastMousePos.x = 0;
 	m_lastMousePos.y = 0;
@@ -153,7 +155,7 @@ void Converter::OnResize(uint32_t width, uint32_t height)
 	m_camera.SetProj(XM_PIDIV4, width, height, 0.1f, 1000.0f);
 }
 
-void Converter::ReadFile(std::wstring filename)
+void Converter::ReadFile(const std::wstring& filename)
 {
 #ifndef _DEBUG
 	std::wstring wfilename(filename.length(), L' ');
@@ -165,12 +167,17 @@ void Converter::ReadFile(std::wstring filename)
 
 	if (m_material.size() > 0)
 		m_material.resize(0);
+	if (m_indSize.size() > 0)
+		m_indSize.resize(0);
+	if (m_offset.size() > 0)
+		m_offset.resize(0);
 
 	if (!m_mesh.read_file(filename))
 	{
 		m_cbPerObj.Reset();
 		return;
 	}
+	m_modelsCount = m_mesh.GetGroupsCount(0);
 
 	if (!LoadTextures())
 	{
@@ -179,11 +186,10 @@ void Converter::ReadFile(std::wstring filename)
 		return;
 	}
 
-	m_modelsCount = m_mesh.GetGroupsCount(0);
-	m_camera.ResetPosition();
-
 	InitializeInputLayout();
 	InitializeBuffers();
+
+	m_camera.ResetPosition();
 }
 
 void Converter::ShowStats()
@@ -282,7 +288,7 @@ void Converter::RenderModels(const size_t& modelNum)
 	m_d3dContext->PSSetShaderResources(2, 1, m_material[modelNum].gloss_map.GetAddressOf());
 	m_d3dContext->PSSetShaderResources(3, 1, m_material[modelNum].specular.GetAddressOf());
 	m_d3dContext->PSSetSamplers(0, 1, m_samplerState.GetAddressOf());
-	m_d3dContext->DrawIndexed(m_isize, 0, 0);
+	m_d3dContext->DrawIndexed(m_indSize[modelNum], m_offset[modelNum], 0);
 }
 
 void Converter::OnMouseDown(WPARAM btnState, int x, int y)
@@ -334,40 +340,43 @@ bool Converter::LoadTextures()
 {
 	Material mat;
 
-	HRESULT hr = CreateTexture(m_d3dDevice.Get(), m_mesh, TextureID::t_albedo, &mat.diffuse);
-	if (FAILED(hr))
+	for (uint8_t modelNum = 0; modelNum < m_modelsCount; ++modelNum)
 	{
-		MessageBoxA(m_hWnd, "Warning: At least one of the textures was not found. Loading default textures.", "Textures not found", MB_OK);
-		hr = CreateDDSTextureFromFile(m_d3dDevice.Get(), (m_execPath + L"\\data\\resources\\textures\\test_gray.dds").c_str(), nullptr, &mat.diffuse);
+		HRESULT hr = CreateTexture(m_d3dDevice.Get(), m_mesh, modelNum, TextureID::t_albedo, &mat.diffuse);
+		if (FAILED(hr))
+		{
+			//MessageBoxA(m_hWnd, "Warning: At least one of the textures was not found. Loading default textures.", "Textures not found", MB_OK);
+			hr = CreateDDSTextureFromFile(m_d3dDevice.Get(), (m_execPath + L"\\data\\resources\\textures\\test_gray.dds").c_str(), nullptr, &mat.diffuse);
 			if (FAILED(hr))
 				return false;
-	}
+		}
 
-	hr = CreateTexture(m_d3dDevice.Get(), m_mesh, TextureID::t_normal, &mat.normal);
-	if (FAILED(hr))
-	{
-		hr = CreateDDSTextureFromFile(m_d3dDevice.Get(), (m_execPath + L"\\data\\resources\\textures\\flatnormal.dds").c_str(), nullptr, &mat.normal);
+		hr = CreateTexture(m_d3dDevice.Get(), m_mesh, modelNum, TextureID::t_normal, &mat.normal);
 		if (FAILED(hr))
-			return false;
-	}
+		{
+			hr = CreateDDSTextureFromFile(m_d3dDevice.Get(), (m_execPath + L"\\data\\resources\\textures\\flatnormal.dds").c_str(), nullptr, &mat.normal);
+			if (FAILED(hr))
+				return false;
+		}
 
-	hr = CreateTexture(m_d3dDevice.Get(), m_mesh, TextureID::t_specular, &mat.specular);
-	if (FAILED(hr))
-	{
-		hr = CreateDDSTextureFromFile(m_d3dDevice.Get(), (m_execPath + L"\\data\\resources\\textures\\test_gray.dds").c_str(), nullptr, &mat.specular);
+		hr = CreateTexture(m_d3dDevice.Get(), m_mesh, modelNum, TextureID::t_specular, &mat.specular);
 		if (FAILED(hr))
-			return false;
-	}
+		{
+			hr = CreateDDSTextureFromFile(m_d3dDevice.Get(), (m_execPath + L"\\data\\resources\\textures\\test_gray.dds").c_str(), nullptr, &mat.specular);
+			if (FAILED(hr))
+				return false;
+		}
 
-	hr = CreateTexture(m_d3dDevice.Get(), m_mesh, TextureID::t_gloss_map, &mat.gloss_map);
-	if (FAILED(hr))
-	{
-		hr = CreateDDSTextureFromFile(m_d3dDevice.Get(), (m_execPath + L"\\data\\resources\\textures\\test_gray.dds").c_str(), nullptr, &mat.gloss_map);
+		hr = CreateTexture(m_d3dDevice.Get(), m_mesh, modelNum, TextureID::t_gloss_map, &mat.gloss_map);
 		if (FAILED(hr))
-			return false;
-	}
+		{
+			hr = CreateDDSTextureFromFile(m_d3dDevice.Get(), (m_execPath + L"\\data\\resources\\textures\\test_gray.dds").c_str(), nullptr, &mat.gloss_map);
+			if (FAILED(hr))
+				return false;
+		}
 
-	m_material.push_back(mat);
+		m_material.push_back(mat);
+	}
 
 	D3D11_SAMPLER_DESC samplerDesc;
 	samplerDesc.Filter = D3D11_FILTER_MIN_MAG_MIP_LINEAR;
@@ -418,25 +427,29 @@ void Converter::InitializeInputLayout()
 void Converter::InitializeBuffers()
 {
 	uint8_t lodNum = 0;
-	uint8_t groupsCount = static_cast<uint8_t>(m_mesh.GetGroupsCount(static_cast<uint8_t>(lodNum)));
+	uint8_t groupsCount = static_cast<uint8_t>(m_mesh.GetGroupsCount(lodNum));
+	UINT vertSize = 0;
+	UINT indSize = 0;
 
-	for (size_t i = 0; i < groupsCount; ++i)
+	for (uint8_t i = 0; i < groupsCount; ++i)
 	{
-		m_vsize += m_mesh.GetVerticesCountPerGroup(static_cast<uint8_t>(lodNum), static_cast<uint8_t>(i));
-		m_isize += m_mesh.GetIndicesCountPerGroup(static_cast<uint8_t>(lodNum), static_cast<uint8_t>(i));
+		m_offset.push_back(indSize);
+		m_indSize.push_back(m_mesh.GetIndicesCountPerGroup(lodNum, i));
+		vertSize += m_mesh.GetVerticesCountPerGroup(lodNum, i);
+		indSize += m_mesh.GetIndicesCountPerGroup(lodNum, i);
 	}
 
-	std::vector<Verts> v(m_vsize);
-	std::vector<uint32_t> ind(m_isize);
-	size_t voffset = 0;
-	size_t ioffset = 0;
+	std::vector<Verts> v(vertSize);
+	std::vector<uint32_t> ind(indSize);
+	uint32_t voffset = 0;
+	uint32_t ioffset = 0;
 	std::vector<Vertex> verticesArray(0);
 	std::vector<Triangle> indicesArray(0);
 
-	for (size_t groupNum = 0; groupNum < groupsCount; ++groupNum)
+	for (uint8_t groupNum = 0; groupNum < groupsCount; ++groupNum)
 	{
-		m_mesh.GetVerticesArray(static_cast<uint8_t>(lodNum), static_cast<uint8_t>(groupNum), &verticesArray);
-		for (size_t i = voffset; i < m_mesh.GetVerticesCountPerGroup(static_cast<uint8_t>(lodNum), static_cast<uint8_t>(groupNum)) + voffset; ++i)
+		m_mesh.GetVerticesArray(lodNum, groupNum, &verticesArray);
+		for (uint32_t i = voffset; i < m_mesh.GetVerticesCountPerGroup(lodNum, groupNum) + voffset; ++i)
 		{
 			std::swap(v[i].Position, verticesArray[i - voffset].position);
 			std::swap(v[i].Normal, verticesArray[i - voffset].normal);
@@ -447,21 +460,21 @@ void Converter::InitializeBuffers()
 		}
 		verticesArray.resize(0);
 
-		m_mesh.GetIndicesArray(static_cast<uint8_t>(lodNum), static_cast<uint8_t>(groupNum), &indicesArray);
-		for (size_t j = ioffset; j < m_mesh.GetIndicesCountPerGroup(static_cast<uint8_t>(lodNum), static_cast<uint8_t>(groupNum)) / 3 + ioffset; ++j)
+		m_mesh.GetIndicesArray(lodNum, groupNum, &indicesArray);
+		for (uint32_t j = ioffset; j < m_mesh.GetIndicesCountPerGroup(lodNum, groupNum) / 3 + ioffset; ++j)
 		{
-			ind[j * 3 + 0] = indicesArray[j - ioffset].index1 + static_cast<uint32_t>(voffset);
-			ind[j * 3 + 1] = indicesArray[j - ioffset].index2 + static_cast<uint32_t>(voffset);
-			ind[j * 3 + 2] = indicesArray[j - ioffset].index3 + static_cast<uint32_t>(voffset);
+			ind[j * 3 + 0] = indicesArray[j - ioffset].index1 + voffset;
+			ind[j * 3 + 1] = indicesArray[j - ioffset].index2 + voffset;
+			ind[j * 3 + 2] = indicesArray[j - ioffset].index3 + voffset;
 		}
-		voffset += m_mesh.GetVerticesCountPerGroup(static_cast<uint8_t>(lodNum), static_cast<uint8_t>(groupNum));
-		ioffset += m_mesh.GetIndicesCountPerGroup(static_cast<uint8_t>(lodNum), static_cast<uint8_t>(groupNum)) / 3;
+		voffset += m_mesh.GetVerticesCountPerGroup(lodNum, groupNum);
+		ioffset += m_mesh.GetIndicesCountPerGroup(lodNum, groupNum) / 3;
 		indicesArray.resize(0);
 	}
 
 	D3D11_BUFFER_DESC vertexBuffer_desc = {};
 	vertexBuffer_desc.Usage = D3D11_USAGE_IMMUTABLE;
-	vertexBuffer_desc.ByteWidth = sizeof(Verts) * m_vsize;
+	vertexBuffer_desc.ByteWidth = sizeof(Verts) * vertSize;
 	vertexBuffer_desc.BindFlags = D3D11_BIND_VERTEX_BUFFER;
 	vertexBuffer_desc.CPUAccessFlags = 0;
 	vertexBuffer_desc.MiscFlags = 0;
@@ -478,7 +491,7 @@ void Converter::InitializeBuffers()
 
 	D3D11_BUFFER_DESC indexBuffer_desc = {};
 	indexBuffer_desc.Usage = D3D11_USAGE_IMMUTABLE;
-	indexBuffer_desc.ByteWidth = sizeof(uint32_t) * m_isize;
+	indexBuffer_desc.ByteWidth = sizeof(uint32_t) * indSize;
 	indexBuffer_desc.BindFlags = D3D11_BIND_INDEX_BUFFER;
 	indexBuffer_desc.CPUAccessFlags = 0;
 	indexBuffer_desc.MiscFlags = 0;
@@ -506,9 +519,9 @@ void Converter::InitializeBuffers()
 		return;
 }
 
-HRESULT CreateTexture(ID3D11Device1* device, const Mesh& mesh, const TextureID& tID, ID3D11ShaderResourceView** texture)
+HRESULT CreateTexture(ID3D11Device1* device, const Mesh& mesh, const uint8_t& groupNum, const TextureID& tID, ID3D11ShaderResourceView** texture)
 {
-	return CreateDDSTextureFromFile(device, mesh.GetTexturePath(0, 0, tID).c_str(), nullptr, texture);
+	return CreateDDSTextureFromFile(device, mesh.GetTexturePath(0, groupNum, tID).c_str(), nullptr, texture);
 }
 
 void DisplayFPS(const Timer& timer, const std::wstring& wndCaption, const HWND& hWnd)

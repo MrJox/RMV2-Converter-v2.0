@@ -333,11 +333,11 @@ public:
 		}
 		return amode;
 	}
-	inline size_t GetTexturesCount(uint8_t lodNum, uint8_t groupNum)const
+	inline uint8_t GetTexturesCount(uint8_t lodNum, uint8_t groupNum)const
 	{
-		return m_model[lodNum][groupNum].texturesCount;
+		return static_cast<uint8_t>(m_model[lodNum][groupNum].texturesCount);
 	}
-	inline std::wstring GetTexturePath(uint8_t lodNum, uint8_t groupNum, TextureID tId)const
+	inline std::wstring GetTexturePath(uint8_t lodNum, uint8_t groupNum, const TextureID& tId)const
 	{
 		std::wstring path = L"";
 		for (size_t i = 0; i < m_model[lodNum][groupNum].texturesCount; ++i)
@@ -345,19 +345,19 @@ public:
 				path = m_model[lodNum][groupNum].textures[i].texPath;
 		return path;
 	}
-	inline size_t GetLodsCount()const
+	inline uint8_t GetLodsCount()const
 	{
-		return m_model.size();
+		return static_cast<uint8_t>(m_model.size());
 	}
-	inline size_t GetGroupsCount(uint8_t lodNum)const
+	inline uint8_t GetGroupsCount(uint8_t lodNum)const
 	{
-		return m_model[lodNum].size();
+		return static_cast<uint8_t>(m_model[lodNum].size());
 	}
-	inline size_t GetVerticesCountPerGroup(uint8_t lodNum, uint8_t groupNum)const
+	inline uint32_t GetVerticesCountPerGroup(uint8_t lodNum, uint8_t groupNum)const
 	{
 		return m_model[lodNum][groupNum].verticesCount;
 	}
-	inline size_t GetIndicesCountPerGroup(uint8_t lodNum, uint8_t groupNum)const
+	inline uint32_t GetIndicesCountPerGroup(uint8_t lodNum, uint8_t groupNum)const
 	{
 		return m_model[lodNum][groupNum].indicesCount;
 	}

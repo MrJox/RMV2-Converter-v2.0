@@ -18,7 +18,7 @@ protected:
 	virtual void OnResize(uint32_t width, uint32_t height);
 	virtual void Update(const Timer& timer) = 0;
 	virtual void Render() = 0;
-	virtual void ReadFile(std::wstring filename) = 0;
+	virtual void ReadFile(const std::wstring& filename) = 0;
 	virtual void ShowStats() = 0;
 
 	virtual void OnMouseDown(WPARAM btnState, int x, int y) = 0;
