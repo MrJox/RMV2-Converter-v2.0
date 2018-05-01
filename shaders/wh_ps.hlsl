@@ -42,7 +42,6 @@ float4 ps_main( in VS_OUTPUT input ) : SV_TARGET
 	float4 diffuse = t_albedo.Sample(s_default, input.TexCoord.xy);
 	float4 specular = t_specular.Sample(s_default, input.TexCoord.xy);
 	float smoothness = t_gloss_map.Sample(s_default, input.TexCoord.xy).x;
-	specular.a = t_gloss_map.Sample(s_default, input.TexCoord.xy).y;
 	clip(diffuse.a - 0.5f);
 
 	float3x3 basis = MAXTBN
@@ -58,19 +57,13 @@ float4 ps_main( in VS_OUTPUT input ) : SV_TARGET
 	float4 diff = float4(1.0f, 1.0f, 1.0f, 1.0f);
 	float4 spec = float4(1.0f, 1.0f, 1.0f, 1.0f);
 
-	[flatten]
-	if (diffuseFactor > 0.0f)
-	{
-		float3 v = reflect(-light_vector, normal);
-		float specFactor = pow(max(dot(v, eye_vector), 0.0f), specular.a);
+	float3 v = reflect(-light_vector, normal);
+	float specFactor = max(dot(v, eye_vector), 0.0f);
 
-		diff = diffuseFactor * diffuse;
-		spec = specFactor * specular;
-	}
-	else
-		return float4(0.0f, 0.0f, 0.0f, 0.0f);
+	diff = diffuseFactor * diffuse;
+	spec = specFactor * specular;
 
-	float4 litColour = diff + spec * smoothness * specular.a;
+	float4 litColour = diff + spec * smoothness * 2.0f;
 
 	return litColour;
 }

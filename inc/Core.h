@@ -1,7 +1,7 @@
 #ifndef CORE_H
 #define CORE_H
-#include "StepTimer.h"
 using Microsoft::WRL::ComPtr;
+#include "StepTimer.h"
 
 class Core
 {
@@ -18,7 +18,8 @@ protected:
 	virtual void OnResize(uint32_t width, uint32_t height);
 	virtual void Update(const Timer& timer) = 0;
 	virtual void Render() = 0;
-	virtual void ReadFile(const std::wstring& filename) = 0;
+	virtual void ReadModel(const std::wstring& filename) = 0;
+	virtual void ReadAnim(const std::wstring& filename) = 0;
 	virtual void ShowStats() = 0;
 
 	virtual void OnMouseDown(WPARAM btnState, int x, int y) = 0;

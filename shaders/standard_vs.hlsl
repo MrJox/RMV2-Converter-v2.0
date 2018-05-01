@@ -42,7 +42,6 @@ VS_OUTPUT vs_main(in APP_INPUT input)
 	output.TexCoord.y += 1;
 	output.TexCoord.w += 1;
 
-	//output.I = normalize(vMatrix[3] - mul(input.Position, wMatrix));
 	output.Tgt = mul(float4(input.Tangent.xyz, 0.0f), wMatrix).xyz;
 	output.Btgt = mul(float4(input.Bitangent.xyz, 0.0f), wMatrix).xyz;
 	output.Nml = mul(float4(input.Normal.xyz, 0.0f), wMatrix).xyz;

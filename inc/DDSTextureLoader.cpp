@@ -561,7 +561,7 @@ namespace
 
 
     //--------------------------------------------------------------------------------------
-    #define ISBITMASK( r,g,b,a ) ( ddpf.RBitMask == r && ddpf.GBitMask == g && ddpf.BBitMask == b && ddpf.ABitMask == a )
+    #define ISBITMASK( r,g,b,a ) ( ddpf.RBitMask == r && ddpf.GBitMask == g && ddpf.BBitMask == b && ddpf.ABitMask == a ) //-V1003
 
     DXGI_FORMAT GetDXGIFormat(const DDS_PIXELFORMAT& ddpf)
     {
@@ -620,7 +620,7 @@ namespace
                 break;
 
             case 16:
-                if (ISBITMASK(0x7c00, 0x03e0, 0x001f, 0x8000))
+                if (ISBITMASK(0x7c00, 0x03e0, 0x001f, 0x8000)) //-V525
                 {
                     return DXGI_FORMAT_B5G5R5A1_UNORM;
                 }

@@ -498,11 +498,33 @@ LRESULT Core::WndProc(HWND hWnd, UINT msg, WPARAM wParam, LPARAM lParam)
 					else if (res == 0)
 						return false;
 
-					ReadFile(std::wstring(File));
+					ReadModel(std::wstring(File));
 				}
 					break;
 				case ID_OPEN_OPENANIM:
+				{
+					wchar_t File[256];
+					OPENFILENAMEW ofn = {};
+					ofn.lStructSize = sizeof(OPENFILENAMEW);
+					ofn.hwndOwner = hWnd;
+					ofn.lpstrFilter = L".anim Files\0*.anim\0";
+					ofn.lpstrFile = File;
+					ofn.lpstrFile[0] = '\0';
+					ofn.nMaxFile = MAX_PATH;
+					ofn.lpstrTitle = L"Select a File";
+					ofn.Flags = OFN_DONTADDTORECENT | OFN_FILEMUSTEXIST;
 
+					BOOL res = GetOpenFileNameW(&ofn);
+					if (res < 0)
+					{
+						MessageBoxA(hWnd, "An error occured while opening this file!", "File open error!!!", MB_OK);
+						return false;
+					}
+					else if (res == 0)
+						return false;
+
+					ReadAnim(std::wstring(File));
+				}
 					break;
 				case ID_FILE_EXIT:
 					DestroyWindow(hWnd);

@@ -53,7 +53,12 @@ void Camera::SetTarget(float x, float y, float z)
 
 void Camera::Update()
 {
-	SetPosition(m_target.x + m_radius * sinf(m_phi) * cosf(m_theta), m_target.y + m_radius * cosf(m_phi), m_target.z + m_radius * sinf(m_phi) * sinf(m_theta));
+	float sinphi = sinf(m_phi);
+	float costheta = cosf(m_theta);
+	float cosphi = cosf(m_phi);
+	float sintheta = sin(m_theta);
+
+	SetPosition(m_target.x + m_radius * sinphi * costheta, m_target.y + m_radius * cosphi, m_target.z + m_radius * sinphi * sintheta);
 	SetLookAt(XMLoadFloat3(&m_pos), XMLoadFloat3(&m_target), XMVectorSet(0.0f, 1.0f, 0.0f, 0.0f));
 }
 

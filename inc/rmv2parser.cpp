@@ -7,8 +7,7 @@ using namespace std;
 void read_default(ifstream&, const FXMVECTOR&, Vertex*);
 void read_weighted(ifstream&, const FXMVECTOR&, Vertex*);
 void read_cinematic(ifstream&, const FXMVECTOR&, Vertex*);
-//void read_tree(ifstream&, const FXMVECTOR&, Vertex*);
-void replace_texture_path(char*, wstring*);
+void replace_texture_path(char*, wstring*, const std::string&);
 
 Mesh::Mesh()
 {
@@ -56,7 +55,7 @@ bool Mesh::read_file(const std::wstring& filename)
 		}
 		else if (m_header.version < 5)
 		{
-			MessageBoxA(nullptr, "Too old file formats are not supported!", "Error: Unsupported version", MB_OK);
+			MessageBoxA(nullptr, "Games older than ROME2 are not supported!", "Error: Unsupported version", MB_OK);
 			return false;
 		}
 
@@ -71,7 +70,7 @@ bool Mesh::read_file(const std::wstring& filename)
 			file.seekg(4, ios_base::cur);
 			if (m_header.version == 7)
 				file.seekg(8, ios_base::cur);
-			m_lodHeader.push_back(lh);
+			m_lodHeader.push_back(move(lh));
 		}
 
 		for (size_t i = 0; i < m_header.lodsCount; ++i)
@@ -126,9 +125,14 @@ bool Mesh::read_file(const std::wstring& filename)
 						char tex[256];
 						file.read(reinterpret_cast<char *>(&texture.texID), sizeof(texture.texID));
 						file.read(reinterpret_cast<char *>(&tex), sizeof(tex));
-						replace_texture_path(tex, &texture.texPath);
-						texture.texPath = filename.substr(0, filename.find_last_of(L"/\\")) + texture.texPath;
-						group.textures.push_back(texture);
+						replace_texture_path(tex, &texture.texPath, std::string(m_header.skeleton));
+						wstring path = filename.substr(0, filename.find_last_of(L"/\\"));
+
+						if (m_header.skeleton[0] == '\0')
+							path = path.substr(0, path.size() - path.substr(path.find_last_of(L"/\\") + 1).size());
+
+						texture.texPath = path + texture.texPath;
+						group.textures.push_back(move(texture));
 					}
 
 					file.seekg(4, ios_base::cur);
@@ -158,7 +162,7 @@ bool Mesh::read_file(const std::wstring& filename)
 							for (size_t k = 0; k < group.verticesCount; ++k)
 							{
 								read_default(file, XMLoadFloat3(&group.pivot), &vertex);
-								group.vertices.push_back(vertex);
+								group.vertices.push_back(move(vertex));
 							}
 							break;
 						}
@@ -167,7 +171,7 @@ bool Mesh::read_file(const std::wstring& filename)
 							for (size_t k = 0; k < group.verticesCount; ++k)
 							{
 								read_weighted(file, XMLoadFloat3(&group.pivot), &vertex);
-								group.vertices.push_back(vertex);
+								group.vertices.push_back(move(vertex));
 							}
 							break;
 						}
@@ -176,13 +180,12 @@ bool Mesh::read_file(const std::wstring& filename)
 							for (size_t k = 0; k < group.verticesCount; ++k)
 							{
 								read_cinematic(file, XMLoadFloat3(&group.pivot), &vertex);
-								group.vertices.push_back(vertex);
+								group.vertices.push_back(move(vertex));
 							}
 							break;
 						}
 						case 6:
 						{
-							//read_tree(file, XMLoadFloat3(&group.pivot), &vertex);
 							return false;
 						}
 						case 11:
@@ -207,20 +210,22 @@ bool Mesh::read_file(const std::wstring& filename)
 						file.read(reinterpret_cast<char *>(&triangle.index2), sizeof(triangle.index2));
 						file.read(reinterpret_cast<char *>(&triangle.index3), sizeof(triangle.index3));
 
-						group.triangles.push_back(triangle);
+						group.triangles.push_back(move(triangle));
 					}
 
-					lod.push_back(group);
+					lod.push_back(move(group));
 					group.textures.resize(0);
 					group.vertices.resize(0);
 					group.triangles.resize(0);
 				}
 			}
-			m_model.push_back(lod);
+			m_model.push_back(move(lod));
 			lod.resize(0);
 			vertexFormat.resize(0);
 		}
 	}
+	else
+		return false;
 
 	file.close();
 	return true;
@@ -234,47 +239,47 @@ void read_default(ifstream& file, const FXMVECTOR& pivot, Vertex* vertex)
 	XMStoreFloat3(&piv, pivot);
 
 	file.read(reinterpret_cast<char *>(&t_pos), sizeof(t_pos));
-	(*vertex).position.x = t_pos + piv.x;
+	vertex->position.x = t_pos + piv.x;
 	file.read(reinterpret_cast<char *>(&t_pos), sizeof(t_pos));
-	(*vertex).position.y = t_pos + piv.y;
+	vertex->position.y = t_pos + piv.y;
 	file.read(reinterpret_cast<char *>(&t_pos), sizeof(t_pos));
-	(*vertex).position.z = t_pos + piv.z;
+	vertex->position.z = t_pos + piv.z;
 	file.seekg(2, ios_base::cur);
 
 	file.read(reinterpret_cast<char *>(&t_pos), sizeof(t_pos));
-	(*vertex).texCoord.x = t_pos;
+	vertex->texCoord.x = t_pos;
 	file.read(reinterpret_cast<char *>(&t_pos), sizeof(t_pos));
-	(*vertex).texCoord.y = 1.0f - t_pos;
+	vertex->texCoord.y = 1.0f - t_pos;
 	file.read(reinterpret_cast<char *>(&t_pos), sizeof(t_pos));
-	(*vertex).texCoord2.x = t_pos;
+	vertex->texCoord2.x = t_pos;
 	file.read(reinterpret_cast<char *>(&t_pos), sizeof(t_pos));
-	(*vertex).texCoord2.y = 1.0f - t_pos;
+	vertex->texCoord2.y = 1.0f - t_pos;
 
 	file.read(reinterpret_cast<char *>(&t_norm), sizeof(t_norm));
-	(*vertex).normal.x = -(t_norm / 127.5f - 1.0f);
+	vertex->normal.x = -(t_norm / 127.5f - 1.0f);
 	file.read(reinterpret_cast<char *>(&t_norm), sizeof(t_norm));
-	(*vertex).normal.y = t_norm / 127.5f - 1.0f;
+	vertex->normal.y = t_norm / 127.5f - 1.0f;
 	file.read(reinterpret_cast<char *>(&t_norm), sizeof(t_norm));
-	(*vertex).normal.z = t_norm / 127.5f - 1.0f;
-	XMStoreFloat3(&(*vertex).normal, XMVector3Normalize(XMLoadFloat3(&(*vertex).normal)));
+	vertex->normal.z = t_norm / 127.5f - 1.0f;
+	XMStoreFloat3(&vertex->normal, XMVector3Normalize(XMLoadFloat3(&vertex->normal)));
 	file.seekg(1, ios_base::cur);
 
 	file.read(reinterpret_cast<char *>(&t_norm), sizeof(t_norm));
-	(*vertex).bitangent.x = -(t_norm / 127.5f - 1.0f);
+	vertex->bitangent.x = -(t_norm / 127.5f - 1.0f);
 	file.read(reinterpret_cast<char *>(&t_norm), sizeof(t_norm));
-	(*vertex).bitangent.y = t_norm / 127.5f - 1.0f;
+	vertex->bitangent.y = t_norm / 127.5f - 1.0f;
 	file.read(reinterpret_cast<char *>(&t_norm), sizeof(t_norm));
-	(*vertex).bitangent.z = t_norm / 127.5f - 1.0f;
-	XMStoreFloat3(&(*vertex).bitangent, XMVector3Normalize(XMLoadFloat3(&(*vertex).bitangent)));
+	vertex->bitangent.z = t_norm / 127.5f - 1.0f;
+	XMStoreFloat3(&vertex->bitangent, XMVector3Normalize(XMLoadFloat3(&vertex->bitangent)));
 	file.seekg(1, ios_base::cur);
 
 	file.read(reinterpret_cast<char *>(&t_norm), sizeof(t_norm));
-	(*vertex).tangent.x = -(t_norm / 127.5f - 1.0f);
+	vertex->tangent.x = -(t_norm / 127.5f - 1.0f);
 	file.read(reinterpret_cast<char *>(&t_norm), sizeof(t_norm));
-	(*vertex).tangent.y = t_norm / 127.5f - 1.0f;
+	vertex->tangent.y = t_norm / 127.5f - 1.0f;
 	file.read(reinterpret_cast<char *>(&t_norm), sizeof(t_norm));
-	(*vertex).tangent.z = t_norm / 127.5f - 1.0f;
-	XMStoreFloat3(&(*vertex).tangent, XMVector3Normalize(XMLoadFloat3(&(*vertex).tangent)));
+	vertex->tangent.z = t_norm / 127.5f - 1.0f;
+	XMStoreFloat3(&vertex->tangent, XMVector3Normalize(XMLoadFloat3(&vertex->tangent)));
 	file.seekg(5, ios_base::cur);
 }
 
@@ -286,50 +291,50 @@ void read_weighted(ifstream& file, const FXMVECTOR& pivot, Vertex* vertex)
 	XMStoreFloat3(&piv, pivot);
 
 	file.read(reinterpret_cast<char *>(&t_pos), sizeof(t_pos));
-	(*vertex).position.x = t_pos + piv.x;
+	vertex->position.x = t_pos + piv.x;
 	file.read(reinterpret_cast<char *>(&t_pos), sizeof(t_pos));
-	(*vertex).position.y = t_pos + piv.y;
+	vertex->position.y = t_pos + piv.y;
 	file.read(reinterpret_cast<char *>(&t_pos), sizeof(t_pos));
-	(*vertex).position.z = t_pos + piv.z;
+	vertex->position.z = t_pos + piv.z;
 	file.seekg(2, ios_base::cur);
 
-	file.read(reinterpret_cast<char *>(&(*vertex).boneID0), sizeof((*vertex).boneID0));
-	file.read(reinterpret_cast<char *>(&(*vertex).boneID1), sizeof((*vertex).boneID1));
+	file.read(reinterpret_cast<char *>(&vertex->boneID0), sizeof(vertex->boneID0));
+	file.read(reinterpret_cast<char *>(&vertex->boneID1), sizeof(vertex->boneID1));
 	file.read(reinterpret_cast<char *>(&t_norm), sizeof(t_norm));
-	(*vertex).weight = t_norm / 255.0f;
-	(*vertex).weight1 = 1.0f - (*vertex).weight;
+	vertex->weight = t_norm / 255.0f;
+	vertex->weight1 = 1.0f - vertex->weight;
 	file.seekg(1, ios_base::cur);
 
 	file.read(reinterpret_cast<char *>(&t_norm), sizeof(t_norm));
-	(*vertex).normal.x = -(t_norm / 127.5f - 1.0f);
+	vertex->normal.x = -(t_norm / 127.5f - 1.0f);
 	file.read(reinterpret_cast<char *>(&t_norm), sizeof(t_norm));
-	(*vertex).normal.y = t_norm / 127.5f - 1.0f;
+	vertex->normal.y = t_norm / 127.5f - 1.0f;
 	file.read(reinterpret_cast<char *>(&t_norm), sizeof(t_norm));
-	(*vertex).normal.z = t_norm / 127.5f - 1.0f;
-	XMStoreFloat3(&(*vertex).normal, XMVector3Normalize(XMLoadFloat3(&(*vertex).normal)));
+	vertex->normal.z = t_norm / 127.5f - 1.0f;
+	XMStoreFloat3(&vertex->normal, XMVector3Normalize(XMLoadFloat3(&vertex->normal)));
 	file.seekg(1, ios_base::cur);
 
 	file.read(reinterpret_cast<char *>(&t_pos), sizeof(t_pos));
-	(*vertex).texCoord.x = t_pos;
+	vertex->texCoord.x = t_pos;
 	file.read(reinterpret_cast<char *>(&t_pos), sizeof(t_pos));
-	(*vertex).texCoord.y = 1.0f - t_pos;
+	vertex->texCoord.y = 1.0f - t_pos;
 
 	file.read(reinterpret_cast<char *>(&t_norm), sizeof(t_norm));
-	(*vertex).bitangent.x = -(t_norm / 127.5f - 1.0f);
+	vertex->bitangent.x = -(t_norm / 127.5f - 1.0f);
 	file.read(reinterpret_cast<char *>(&t_norm), sizeof(t_norm));
-	(*vertex).bitangent.y = t_norm / 127.5f - 1.0f;
+	vertex->bitangent.y = t_norm / 127.5f - 1.0f;
 	file.read(reinterpret_cast<char *>(&t_norm), sizeof(t_norm));
-	(*vertex).bitangent.z = t_norm / 127.5f - 1.0f;
-	XMStoreFloat3(&(*vertex).bitangent, XMVector3Normalize(XMLoadFloat3(&(*vertex).bitangent)));
+	vertex->bitangent.z = t_norm / 127.5f - 1.0f;
+	XMStoreFloat3(&vertex->bitangent, XMVector3Normalize(XMLoadFloat3(&vertex->bitangent)));
 	file.seekg(1, ios_base::cur);
 
 	file.read(reinterpret_cast<char *>(&t_norm), sizeof(t_norm));
-	(*vertex).tangent.x = -(t_norm / 127.5f - 1.0f);
+	vertex->tangent.x = -(t_norm / 127.5f - 1.0f);
 	file.read(reinterpret_cast<char *>(&t_norm), sizeof(t_norm));
-	(*vertex).tangent.y = t_norm / 127.5f - 1.0f;
+	vertex->tangent.y = t_norm / 127.5f - 1.0f;
 	file.read(reinterpret_cast<char *>(&t_norm), sizeof(t_norm));
-	(*vertex).tangent.z = t_norm / 127.5f - 1.0f;
-	XMStoreFloat3(&(*vertex).tangent, XMVector3Normalize(XMLoadFloat3(&(*vertex).tangent)));
+	vertex->tangent.z = t_norm / 127.5f - 1.0f;
+	XMStoreFloat3(&vertex->tangent, XMVector3Normalize(XMLoadFloat3(&vertex->tangent)));
 	file.seekg(1, ios_base::cur);
 }
 
@@ -341,51 +346,54 @@ void read_cinematic(ifstream& file, const FXMVECTOR& pivot, Vertex* vertex)
 	XMStoreFloat3(&piv, pivot);
 
 	file.read(reinterpret_cast<char *>(&t_pos), sizeof(t_pos));
-	(*vertex).position.x = -(t_pos + piv.x);
+	vertex->position.x = t_pos + piv.x;
 	file.read(reinterpret_cast<char *>(&t_pos), sizeof(t_pos));
-	(*vertex).position.y = t_pos + piv.y;
+	vertex->position.y = t_pos + piv.y;
 	file.read(reinterpret_cast<char *>(&t_pos), sizeof(t_pos));
-	(*vertex).position.z = t_pos + piv.z;
+	vertex->position.z = t_pos + piv.z;
 	file.seekg(2, ios_base::cur);
 
 	file.seekg(8, ios_base::cur);
 
 	file.read(reinterpret_cast<char *>(&t_norm), sizeof(t_norm));
-	(*vertex).normal.x = -(t_norm / 127.5f - 1.0f);
+	vertex->normal.x = -(t_norm / 127.5f - 1.0f);
 	file.read(reinterpret_cast<char *>(&t_norm), sizeof(t_norm));
-	(*vertex).normal.y = t_norm / 127.5f - 1.0f;
+	vertex->normal.y = t_norm / 127.5f - 1.0f;
 	file.read(reinterpret_cast<char *>(&t_norm), sizeof(t_norm));
-	(*vertex).normal.z = t_norm / 127.5f - 1.0f;
-	XMStoreFloat3(&(*vertex).normal, XMVector3Normalize(XMLoadFloat3(&(*vertex).normal)));
+	vertex->normal.z = t_norm / 127.5f - 1.0f;
+	XMStoreFloat3(&vertex->normal, XMVector3Normalize(XMLoadFloat3(&vertex->normal)));
 	file.seekg(1, ios_base::cur);
 
 	file.read(reinterpret_cast<char *>(&t_pos), sizeof(t_pos));
-	(*vertex).texCoord.x = t_pos;
+	vertex->texCoord.x = t_pos;
 	file.read(reinterpret_cast<char *>(&t_pos), sizeof(t_pos));
-	(*vertex).texCoord.y = 1.0f - t_pos;
+	vertex->texCoord.y = 1.0f - t_pos;
 
 	file.read(reinterpret_cast<char *>(&t_norm), sizeof(t_norm));
-	(*vertex).bitangent.x = -(t_norm / 127.5f - 1.0f);
+	vertex->bitangent.x = -(t_norm / 127.5f - 1.0f);
 	file.read(reinterpret_cast<char *>(&t_norm), sizeof(t_norm));
-	(*vertex).bitangent.y = t_norm / 127.5f - 1.0f;
+	vertex->bitangent.y = t_norm / 127.5f - 1.0f;
 	file.read(reinterpret_cast<char *>(&t_norm), sizeof(t_norm));
-	(*vertex).bitangent.z = t_norm / 127.5f - 1.0f;
-	XMStoreFloat3(&(*vertex).bitangent, XMVector3Normalize(XMLoadFloat3(&(*vertex).bitangent)));
+	vertex->bitangent.z = t_norm / 127.5f - 1.0f;
+	XMStoreFloat3(&vertex->bitangent, XMVector3Normalize(XMLoadFloat3(&vertex->bitangent)));
 	file.seekg(1, ios_base::cur);
 
 	file.read(reinterpret_cast<char *>(&t_norm), sizeof(t_norm));
-	(*vertex).tangent.x = -(t_norm / 127.5f - 1.0f);
+	vertex->tangent.x = -(t_norm / 127.5f - 1.0f);
 	file.read(reinterpret_cast<char *>(&t_norm), sizeof(t_norm));
-	(*vertex).tangent.y = t_norm / 127.5f - 1.0f;
+	vertex->tangent.y = t_norm / 127.5f - 1.0f;
 	file.read(reinterpret_cast<char *>(&t_norm), sizeof(t_norm));
-	(*vertex).tangent.z = t_norm / 127.5f - 1.0f;
-	XMStoreFloat3(&(*vertex).tangent, XMVector3Normalize(XMLoadFloat3(&(*vertex).tangent)));
+	vertex->tangent.z = t_norm / 127.5f - 1.0f;
+	XMStoreFloat3(&vertex->tangent, XMVector3Normalize(XMLoadFloat3(&vertex->tangent)));
 	file.seekg(1, ios_base::cur);
 }
 
-void replace_texture_path(char* temp, wstring* texture)
+void replace_texture_path(char* temp, wstring* texture, const std::string& skelName)
 {
 	wstring ws(&temp[0], &temp[256]);
 	*texture = ws.substr(ws.find_last_of(L"/\\") + 1);
-	*texture = L"\\tex\\" + *texture;
+	if (skelName[0] == '\0')
+		*texture = L"\\Textures\\" + *texture;
+	else
+		*texture = L"\\tex\\" + *texture;
 }

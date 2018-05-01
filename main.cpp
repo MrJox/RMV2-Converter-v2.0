@@ -1,7 +1,8 @@
-﻿#include "pch.h"
+﻿#include "inc\pch.h"
 #include "inc\Core.h"
 #include "inc\Camera.h"
 #include "inc\rmv2parser.h"
+#include "inc\AnimParser.h"
 #include "inc\DDSTextureLoader.h"
 
 using namespace DirectX;
@@ -42,7 +43,7 @@ class Converter : public Core
 public:
 	Converter(HINSTANCE hInstance);
 	Converter(const Converter&) = delete;
-	Converter(Converter &&) = delete;
+	Converter(Converter&&) = delete;
 	Converter& operator=(const Converter&) = delete;
 	Converter& operator=(Converter&&) = delete;
 	~Converter();
@@ -54,7 +55,8 @@ private:
 	virtual void OnResize(uint32_t width, uint32_t height)final;
 	virtual void Update(const Timer& timer)final;
 	virtual void Render()final;
-	virtual void ReadFile(const std::wstring& filename)final;
+	virtual void ReadModel(const std::wstring& filename)final;
+	virtual void ReadAnim(const std::wstring& filename)final;
 	virtual void ShowStats()final;
 
 	virtual void OnMouseDown(WPARAM btnState, int x, int y)final;
@@ -79,6 +81,8 @@ private:
 
 	Camera						m_camera;
 	Mesh						m_mesh;
+	Skeleton					m_skeleton;
+	Animation					m_animation;
 	std::vector<Material>		m_material;
 
 	std::wstring				m_execPath;
@@ -119,8 +123,6 @@ Converter::Converter(HINSTANCE hInstance) :
 	m_pixelShader(nullptr),
 	m_samplerState(nullptr),
 
-	//m_vsize(0),
-	//m_isize(0),
 	m_modelsCount(1)
 {
 	m_wndCaption = L"RMV2 Converter v2.0";
@@ -155,7 +157,7 @@ void Converter::OnResize(uint32_t width, uint32_t height)
 	m_camera.SetProj(XM_PIDIV4, width, height, 0.1f, 1000.0f);
 }
 
-void Converter::ReadFile(const std::wstring& filename)
+void Converter::ReadModel(const std::wstring& filename)
 {
 #ifndef _DEBUG
 	std::wstring wfilename(filename.length(), L' ');
@@ -186,10 +188,30 @@ void Converter::ReadFile(const std::wstring& filename)
 		return;
 	}
 
+	std::string skelName = m_mesh.GetSkeletonName();
+	if (skelName[0] != '\0')
+	{
+		if (!m_skeleton.Read(std::string(m_execPath.begin(), m_execPath.end()), skelName))
+		{
+			MessageBoxA(m_hWnd, "Error: The skeleton .anim file wasn't found in $AppDir/skeletons/", "Skeleton not found", MB_OK);
+			m_cbPerObj.Reset();
+			return;
+		}
+	}
+
 	InitializeInputLayout();
 	InitializeBuffers();
 
 	m_camera.ResetPosition();
+}
+
+void Converter::ReadAnim(const std::wstring& filename)
+{
+	if (!m_animation.Read(filename))
+	{
+		MessageBoxA(m_hWnd, "Error: Animation file wasn't found or was corrupted", "Animation not found", MB_OK);
+		return;
+	}
 }
 
 void Converter::ShowStats()
@@ -277,7 +299,6 @@ void Converter::Render()
 		for (size_t modelNum = 0; modelNum < m_modelsCount; ++modelNum)
 			RenderModels(modelNum);
 	}
-
 	m_swapChain->Present(1, 0);
 }
 
@@ -345,7 +366,6 @@ bool Converter::LoadTextures()
 		HRESULT hr = CreateTexture(m_d3dDevice.Get(), m_mesh, modelNum, TextureID::t_albedo, &mat.diffuse);
 		if (FAILED(hr))
 		{
-			//MessageBoxA(m_hWnd, "Warning: At least one of the textures was not found. Loading default textures.", "Textures not found", MB_OK);
 			hr = CreateDDSTextureFromFile(m_d3dDevice.Get(), (m_execPath + L"\\data\\resources\\textures\\test_gray.dds").c_str(), nullptr, &mat.diffuse);
 			if (FAILED(hr))
 				return false;
@@ -403,9 +423,18 @@ void Converter::InitializeInputLayout()
 	if (FAILED(result))
 		return;
 
-	result = D3DReadFileToBlob((m_execPath + L"\\data\\shaders\\standard_ps.cso").c_str(), &psbyteCode);
-	if (FAILED(result))
-		return;
+	if (m_mesh.GetVersion() == 7)
+	{
+		result = D3DReadFileToBlob((m_execPath + L"\\data\\shaders\\wh_ps.cso").c_str(), &psbyteCode);
+		if (FAILED(result))
+			return;
+	}
+	else
+	{
+		result = D3DReadFileToBlob((m_execPath + L"\\data\\shaders\\standard_ps.cso").c_str(), &psbyteCode);
+		if (FAILED(result))
+			return;
+	}
 
 	ThrowIfFailed(m_d3dDevice->CreateVertexShader(vsbyteCode->GetBufferPointer(), vsbyteCode->GetBufferSize(), nullptr, &m_vertexShader));
 	ThrowIfFailed(result = m_d3dDevice->CreatePixelShader(psbyteCode->GetBufferPointer(), psbyteCode->GetBufferSize(), nullptr, &m_pixelShader));

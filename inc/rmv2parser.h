@@ -1,4 +1,3 @@
-#pragma once
 #ifndef RMV2PARSER_H
 #define RMV2PARSER_H
 using namespace DirectX;
@@ -149,6 +148,10 @@ public:
 
 	bool read_file(const std::wstring& filename);
 
+	inline uint8_t GetVersion()const
+	{
+		return static_cast<uint8_t>(m_header.version);
+	}
 	inline std::string GetGroupName(uint8_t lodNum, uint8_t groupNum)const
 	{
 		return std::string(m_model[lodNum][groupNum].groupName);

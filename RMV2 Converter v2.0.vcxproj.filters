@@ -16,33 +16,36 @@
     <Filter Include="shaders">
       <UniqueIdentifier>{2a090e87-3f91-4502-a6aa-c6a7d08e5104}</UniqueIdentifier>
     </Filter>
-    <Filter Include="inc">
-      <UniqueIdentifier>{2c3c030f-186e-4888-ab95-a4c3c212645e}</UniqueIdentifier>
-    </Filter>
   </ItemGroup>
   <ItemGroup>
-    <ClInclude Include="inc\Camera.h">
-      <Filter>inc</Filter>
-    </ClInclude>
-    <ClInclude Include="inc\Core.h">
-      <Filter>inc</Filter>
-    </ClInclude>
-    <ClInclude Include="inc\DDSTextureLoader.h">
-      <Filter>inc</Filter>
-    </ClInclude>
-    <ClInclude Include="inc\Half.h">
-      <Filter>inc</Filter>
-    </ClInclude>
-    <ClInclude Include="inc\StepTimer.h">
-      <Filter>inc</Filter>
-    </ClInclude>
-    <ClInclude Include="inc\rmv2parser.h">
-      <Filter>inc</Filter>
-    </ClInclude>
-    <ClInclude Include="pch.h">
+    <ClInclude Include="resource.h">
       <Filter>Header Files</Filter>
     </ClInclude>
-    <ClInclude Include="resource.h">
+    <ClInclude Include="inc\AnimParser.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="inc\Camera.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="inc\Core.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="inc\DDSTextureLoader.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="inc\Half.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="inc\InvMatsParser.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="inc\pch.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="inc\rmv2parser.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="inc\StepTimer.h">
       <Filter>Header Files</Filter>
     </ClInclude>
   </ItemGroup>
@@ -65,7 +68,13 @@
     <ClCompile Include="inc\rmv2parser.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
-    <ClCompile Include="pch.cpp">
+    <ClCompile Include="inc\InvMatsParser.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="inc\AnimParser.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="inc\pch.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
   </ItemGroup>
@@ -74,6 +83,9 @@
       <Filter>shaders</Filter>
     </FxCompile>
     <FxCompile Include="shaders\standard_ps.hlsl">
+      <Filter>shaders</Filter>
+    </FxCompile>
+    <FxCompile Include="shaders\wh_ps.hlsl">
       <Filter>shaders</Filter>
     </FxCompile>
   </ItemGroup>

@@ -1,4 +1,3 @@
-#pragma once
 #ifndef STEPTIMER_H
 #define STEPTIMER_H
 

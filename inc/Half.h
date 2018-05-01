@@ -1,8 +1,6 @@
 #ifndef HALF_H
 #define HALF_H
 
-#include <algorithm>
-
 class HalfFloat
 {
 public:
