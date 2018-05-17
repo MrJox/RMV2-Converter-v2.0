@@ -48,16 +48,17 @@ float4 ps_main( in VS_OUTPUT input ) : SV_TARGET
 	float3x3 basis = MAXTBN
 	float4 norm = t_normal.Sample(s_default, input.TexCoord.xy).rgba;
 	norm.r = norm.a;
-	norm.g = 1.0f - norm.g;
+	norm.g = norm.g;
 	norm.b = 1.0f - norm.b;
+
 	float3 N = (norm.rgb * 2.0f - 1.0f).xzy;
 	float3 normal = normalize(mul(normalize(N), basis));
-	normal.x = -normal.x;
 
 	float diffuseFactor = dot(light_vector, normal);
 	float4 diff = float4(1.0f, 1.0f, 1.0f, 1.0f);
 	float4 spec = float4(1.0f, 1.0f, 1.0f, 1.0f);
 
+	specular.a *= 5.0f;
 	[flatten]
 	if (diffuseFactor > 0.0f)
 	{

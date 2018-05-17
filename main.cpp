@@ -1,11 +1,11 @@
 ﻿#include "inc\pch.h"
 #include "inc\Core.h"
 #include "inc\Camera.h"
-#include "inc\rmv2parser.h"
-#include "inc\AnimParser.h"
 #include "inc\DDSTextureLoader.h"
+#include "inc\DaeExporter.h"
 
 using namespace DirectX;
+using namespace std;
 
 struct Verts
 {
@@ -36,7 +36,7 @@ struct Material
 };
 
 HRESULT CreateTexture(ID3D11Device1*, const Mesh&, const uint8_t& groupNum, const TextureID&, ID3D11ShaderResourceView**);
-void DisplayFPS(const Timer&, const std::wstring&, const HWND&);
+void DisplayFPS(const Timer&, const wstring&, const HWND&);
 
 class Converter : public Core
 {
@@ -55,8 +55,10 @@ private:
 	virtual void OnResize(uint32_t width, uint32_t height)final;
 	virtual void Update(const Timer& timer)final;
 	virtual void Render()final;
-	virtual void ReadModel(const std::wstring& filename)final;
-	virtual void ReadAnim(const std::wstring& filename)final;
+	virtual void ReadModel(const wstring& filename)final;
+	virtual void ReadAnim(const string& filename)final;
+	virtual void ExportMesh()final;
+	virtual void ExportMeshAnim()final;
 	virtual void ShowStats()final;
 
 	virtual void OnMouseDown(WPARAM btnState, int x, int y)final;
@@ -81,13 +83,13 @@ private:
 
 	Camera						m_camera;
 	Mesh						m_mesh;
-	Skeleton					m_skeleton;
 	Animation					m_animation;
-	std::vector<Material>		m_material;
+	vector<Material>			m_material;
 
-	std::wstring				m_execPath;
-	std::vector<UINT>			m_offset;
-	std::vector<UINT>			m_indSize;
+	wstring						m_execPath;
+	string						m_exportName;
+	vector<UINT>				m_offset;
+	vector<UINT>				m_indSize;
 	UINT						m_modelsCount;
 	POINT						m_lastMousePos;
 };
@@ -145,7 +147,7 @@ bool Converter::Initialize()
 
 	wchar_t buf[MAX_PATH];
 	GetModuleFileNameW(nullptr, buf, MAX_PATH);
-	m_execPath = std::wstring(buf);
+	m_execPath = wstring(buf);
 	m_execPath = m_execPath.substr(0, m_execPath.find_last_of(L"/\\"));
 
 	return true;
@@ -157,11 +159,11 @@ void Converter::OnResize(uint32_t width, uint32_t height)
 	m_camera.SetProj(XM_PIDIV4, width, height, 0.1f, 1000.0f);
 }
 
-void Converter::ReadModel(const std::wstring& filename)
+void Converter::ReadModel(const wstring& filename)
 {
 #ifndef _DEBUG
-	std::wstring wfilename(filename.length(), L' ');
-	std::copy(filename.begin(), filename.end(), wfilename.begin());
+	wstring wfilename(filename.length(), L' ');
+	copy(filename.begin(), filename.end(), wfilename.begin());
 	wfilename = wfilename.substr(wfilename.find_last_of(L"/\\") + 1);
 
 	SetWindowTextW(m_hWnd, (m_wndCaption + L"    " + wfilename).c_str());
@@ -188,24 +190,16 @@ void Converter::ReadModel(const std::wstring& filename)
 		return;
 	}
 
-	std::string skelName = m_mesh.GetSkeletonName();
-	if (skelName[0] != '\0')
-	{
-		if (!m_skeleton.Read(std::string(m_execPath.begin(), m_execPath.end()), skelName))
-		{
-			MessageBoxA(m_hWnd, "Error: The skeleton .anim file wasn't found in $AppDir/skeletons/", "Skeleton not found", MB_OK);
-			m_cbPerObj.Reset();
-			return;
-		}
-	}
-
 	InitializeInputLayout();
 	InitializeBuffers();
 
+	m_exportName = string(filename.begin(), filename.end());
+	m_exportName = m_exportName.substr(m_exportName.find_last_of("/\\") + 1);
+	m_exportName = string(m_execPath.begin(), m_execPath.end()) + "\\data\\exported\\" + m_exportName.erase(m_exportName.size() - 15) + ".dae";
 	m_camera.ResetPosition();
 }
 
-void Converter::ReadAnim(const std::wstring& filename)
+void Converter::ReadAnim(const string& filename)
 {
 	if (!m_animation.Read(filename))
 	{
@@ -214,25 +208,65 @@ void Converter::ReadAnim(const std::wstring& filename)
 	}
 }
 
+void Converter::ExportMesh()
+{
+	if (!m_exportName.empty())
+	{
+		DaeExporter exporter(m_exportName, m_mesh);
+		if (!exporter.ExportMesh())
+		{
+			MessageBoxA(m_hWnd, "Error. Couldn't write the file to /data/exported/", "Export Error", MB_OK);
+			return;
+		}
+
+		MessageBoxA(m_hWnd, "Done! Your file is in /data/exported/", "Export Successful", MB_OK);
+	}
+	else
+	{
+		MessageBoxA(m_hWnd, "Error. Open RMV2 file first!", "Export Error", MB_OK);
+		return;
+	}
+}
+
+void Converter::ExportMeshAnim()
+{
+	if (!m_exportName.empty())
+	{
+		DaeExporter exporter(m_exportName);
+		if (!exporter.ExportMeshAnim())
+		{
+			MessageBoxA(m_hWnd, "Error. Couldn't write the file to /data/exported/", "Export Error", MB_OK);
+			return;
+		}
+
+		MessageBoxA(m_hWnd, "Done! Your file is in /data/exported/", "Export Successful", MB_OK);
+	}
+	else
+	{
+		MessageBoxA(m_hWnd, "Error. Open RMV2 file first!", "No file to write", MB_OK);
+		return;
+	}
+}
+
 void Converter::ShowStats()
 {
 	if (m_cbPerObj)
 	{
-		std::string output = "skeleton: " + m_mesh.GetSkeletonName() + "\n\n";
+		string output = "skeleton: " + m_mesh.GetSkeletonName() + "\n\n";
 		if (m_mesh.GetSkeletonName().empty())
 			output = "skeleton: none\n\n";
 
 		size_t lodsCount = m_mesh.GetLodsCount();
 		for (size_t lodsNum = 0; lodsNum < lodsCount; ++lodsNum)
 		{
-			output += "LOD" + std::to_string(lodsNum + 1) + ":\n";
+			output += "LOD" + to_string(lodsNum + 1) + ":\n";
 
 			for (size_t groupsNum = 0; groupsNum < m_mesh.GetGroupsCount(static_cast<uint8_t>(lodsNum)); ++groupsNum)
 			{
-				output += std::string(m_mesh.GetGroupName(static_cast<uint8_t>(lodsNum), static_cast<uint8_t>(groupsNum))) + ":\n";
+				output += string(m_mesh.GetGroupName(static_cast<uint8_t>(lodsNum), static_cast<uint8_t>(groupsNum))) + ":\n";
 				output += "rigid_material: " + m_mesh.GetRigidMaterial(static_cast<uint8_t>(lodsNum), static_cast<uint8_t>(groupsNum)) + "\n";
-				output += "vertices count: " + std::to_string(m_mesh.GetVerticesCountPerGroup(static_cast<uint8_t>(lodsNum), static_cast<uint8_t>(groupsNum))) + "\n";
-				output += "indices count: " + std::to_string(m_mesh.GetIndicesCountPerGroup(static_cast<uint8_t>(lodsNum), static_cast<uint8_t>(groupsNum))) + "\n";
+				output += "vertices count: " + to_string(m_mesh.GetVerticesCountPerGroup(static_cast<uint8_t>(lodsNum), static_cast<uint8_t>(groupsNum))) + "\n";
+				output += "indices count: " + to_string(m_mesh.GetIndicesCountPerGroup(static_cast<uint8_t>(lodsNum), static_cast<uint8_t>(groupsNum))) + "\n";
 				output += "alpha mode: " + m_mesh.GetAlphaMode(static_cast<uint8_t>(lodsNum), static_cast<uint8_t>(groupsNum)) + "\n";
 				
 				output += "\n";
@@ -468,24 +502,24 @@ void Converter::InitializeBuffers()
 		indSize += m_mesh.GetIndicesCountPerGroup(lodNum, i);
 	}
 
-	std::vector<Verts> v(vertSize);
-	std::vector<uint32_t> ind(indSize);
+	vector<Verts> v(vertSize);
+	vector<uint32_t> ind(indSize);
 	uint32_t voffset = 0;
 	uint32_t ioffset = 0;
-	std::vector<Vertex> verticesArray(0);
-	std::vector<Triangle> indicesArray(0);
+	vector<Vertex> verticesArray(0);
+	vector<Triangle> indicesArray(0);
 
 	for (uint8_t groupNum = 0; groupNum < groupsCount; ++groupNum)
 	{
 		m_mesh.GetVerticesArray(lodNum, groupNum, &verticesArray);
 		for (uint32_t i = voffset; i < m_mesh.GetVerticesCountPerGroup(lodNum, groupNum) + voffset; ++i)
 		{
-			std::swap(v[i].Position, verticesArray[i - voffset].position);
-			std::swap(v[i].Normal, verticesArray[i - voffset].normal);
-			std::swap(v[i].Tangent, verticesArray[i - voffset].tangent);
-			std::swap(v[i].Bitangent, verticesArray[i - voffset].bitangent);
-			std::swap(v[i].TexCoord0, verticesArray[i - voffset].texCoord);
-			std::swap(v[i].TexCoord1, verticesArray[i - voffset].texCoord2);
+			swap(v[i].Position, verticesArray[i - voffset].position);
+			swap(v[i].Normal, verticesArray[i - voffset].normal);
+			swap(v[i].Tangent, verticesArray[i - voffset].tangent);
+			swap(v[i].Bitangent, verticesArray[i - voffset].bitangent);
+			swap(v[i].TexCoord0, verticesArray[i - voffset].texCoord);
+			swap(v[i].TexCoord1, verticesArray[i - voffset].texCoord2);
 		}
 		verticesArray.resize(0);
 
@@ -553,7 +587,7 @@ HRESULT CreateTexture(ID3D11Device1* device, const Mesh& mesh, const uint8_t& gr
 	return CreateDDSTextureFromFile(device, mesh.GetTexturePath(0, groupNum, tID).c_str(), nullptr, texture);
 }
 
-void DisplayFPS(const Timer& timer, const std::wstring& wndCaption, const HWND& hWnd)
+void DisplayFPS(const Timer& timer, const wstring& wndCaption, const HWND& hWnd)
 {
 	static int frameCnt = 0;
 	static float timeElapsed = 0.0f;
@@ -566,10 +600,10 @@ void DisplayFPS(const Timer& timer, const std::wstring& wndCaption, const HWND& 
 		float fps = (float)frameCnt;
 		float mspf = 1000.0f / fps;
 
-		std::wstring fpsStr = std::to_wstring(fps);
-		std::wstring mspfStr = std::to_wstring(mspf);
+		wstring fpsStr = to_wstring(fps);
+		wstring mspfStr = to_wstring(mspf);
 
-		std::wstring windowText = wndCaption +
+		wstring windowText = wndCaption +
 			L"    fps: " + fpsStr +
 			L"   mspf: " + mspfStr;
 

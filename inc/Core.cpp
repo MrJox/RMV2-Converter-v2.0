@@ -80,13 +80,13 @@ bool Core::InitializeWindow()
 	wcex.hIcon			= LoadIcon(wcex.hInstance, MAKEINTRESOURCE(IDI_ICON1));
 	wcex.hCursor		= LoadCursor(nullptr, IDC_ARROW);
 	wcex.hbrBackground	= (HBRUSH)GetStockObject(NULL_BRUSH);
-	wcex.lpszMenuName	= MAKEINTRESOURCEW(IDR_MENU1);
+	wcex.lpszMenuName	= MAKEINTRESOURCE(IDR_MENU1);
 	wcex.lpszClassName	= L"MainWnd";
 	wcex.hIconSm		= LoadIcon(wcex.hInstance, MAKEINTRESOURCE(IDI_ICON1));
 
 	if (!RegisterClassEx(&wcex))
 	{
-		MessageBox(0, L"RegisterClass Failed.", 0, 0);
+		MessageBoxW(0, L"RegisterClass Failed.", 0, 0);
 		return false;
 	}
 
@@ -96,11 +96,11 @@ bool Core::InitializeWindow()
 	int width = R.right - R.left;
 	int height = R.bottom - R.top;
 
-	m_hWnd = CreateWindowEx(0, L"MainWnd", m_wndCaption.c_str(),
+	m_hWnd = CreateWindowExW(0, L"MainWnd", m_wndCaption.c_str(),
 		WS_OVERLAPPEDWINDOW, CW_USEDEFAULT, CW_USEDEFAULT, width, height, 0, 0, m_hInst, 0);
 	if (!m_hWnd)
 	{
-		MessageBox(0, L"CreateWindow Failed.", 0, 0);
+		MessageBoxW(0, L"CreateWindow Failed.", 0, 0);
 		return false;
 	}
 
@@ -523,8 +523,15 @@ LRESULT Core::WndProc(HWND hWnd, UINT msg, WPARAM wParam, LPARAM lParam)
 					else if (res == 0)
 						return false;
 
-					ReadAnim(std::wstring(File));
+					std::wstring ws = File;
+					ReadAnim(std::string(ws.begin(), ws.end()));
 				}
+					break;
+				case ID_SAVE_SAVEMESH:
+					ExportMesh();
+					break;
+				case ID_SAVE_SAVEMESHANIM:
+					ExportMeshAnim();
 					break;
 				case ID_FILE_EXIT:
 					DestroyWindow(hWnd);
@@ -533,7 +540,7 @@ LRESULT Core::WndProc(HWND hWnd, UINT msg, WPARAM wParam, LPARAM lParam)
 					ShowStats();
 					break;
 				case ID_HELP_ABOUT:
-					MessageBox(hWnd, L"Creator: Hayali Salimov aka Mr.Jox\n\nCredits: acgessler for parts of HalfFloat type\n\nContact: salimovhayali@gmail.com\n\nRMV2 Converter v2.0 © 2018", L"About", MB_OK);
+					MessageBoxW(hWnd, L"Creator: Hayali Salimov aka Mr.Jox\n\nCredits: acgessler for parts of HalfFloat type\n\nContact: salimovhayali@gmail.com\n\nRMV2 Converter v2.0 © 2018", L"About", MB_OK);
 					break;
 				default:
 					return DefWindowProc(hWnd, msg, wParam, lParam);

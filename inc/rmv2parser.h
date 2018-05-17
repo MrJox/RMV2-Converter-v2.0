@@ -317,6 +317,10 @@ public:
 		}
 		return rma;
 	}
+	inline RigidMaterial GetRigidMaterialStruct(uint8_t lodNum, uint8_t groupNum)const
+	{
+		return m_model[lodNum][groupNum].materialID;
+	}
 	inline std::string GetAlphaMode(uint8_t lodNum, uint8_t groupNum)const
 	{
 		std::string amode;
@@ -374,6 +378,12 @@ public:
 	}
 
 private:
+
+	void read_default(std::ifstream&, const DirectX::FXMVECTOR&, Vertex*);
+	void read_weighted(std::ifstream&, const DirectX::FXMVECTOR&, Vertex*);
+	void read_cinematic(std::ifstream&, const DirectX::FXMVECTOR&, Vertex*);
+	void replace_texture_path(char*, std::wstring*, const std::string&);
+
 	Header							m_header;
 	std::vector<LodHeader>			m_lodHeader;
 	std::vector<std::vector<Group>>	m_model;

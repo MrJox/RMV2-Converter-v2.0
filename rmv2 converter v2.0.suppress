@@ -1,0 +1,186 @@
+<?xml version="1.0" standalone="yes"?>
+<NewDataSet>
+  <xs:schema id="NewDataSet" xmlns="" xmlns:xs="http://www.w3.org/2001/XMLSchema" xmlns:msdata="urn:schemas-microsoft-com:xml-msdata">
+    <xs:element name="NewDataSet" msdata:IsDataSet="true" msdata:UseCurrentLocale="true">
+      <xs:complexType>
+        <xs:choice minOccurs="0" maxOccurs="unbounded">
+          <xs:element name="SuppressVersion">
+            <xs:complexType>
+              <xs:sequence>
+                <xs:element name="CurrentVersion" type="xs:int" minOccurs="0" />
+              </xs:sequence>
+            </xs:complexType>
+          </xs:element>
+          <xs:element name="RMV2_x0020_Converter_x0020_v2.0">
+            <xs:complexType>
+              <xs:sequence>
+                <xs:element name="FileName" type="xs:string" default="" />
+                <xs:element name="ErrorCode" type="xs:string" default="" />
+                <xs:element name="Message" type="xs:string" default="" />
+                <xs:element name="CodePrev" type="xs:unsignedInt" default="0" />
+                <xs:element name="CodeCurrent" type="xs:unsignedInt" default="0" />
+                <xs:element name="CodeNext" type="xs:unsignedInt" default="0" />
+              </xs:sequence>
+            </xs:complexType>
+          </xs:element>
+        </xs:choice>
+      </xs:complexType>
+      <xs:unique name="Constraint1" msdata:PrimaryKey="true">
+        <xs:selector xpath=".//RMV2_x0020_Converter_x0020_v2.0" />
+        <xs:field xpath="FileName" />
+        <xs:field xpath="ErrorCode" />
+        <xs:field xpath="Message" />
+        <xs:field xpath="CodePrev" />
+        <xs:field xpath="CodeCurrent" />
+        <xs:field xpath="CodeNext" />
+      </xs:unique>
+    </xs:element>
+  </xs:schema>
+  <SuppressVersion>
+    <CurrentVersion>2</CurrentVersion>
+  </SuppressVersion>
+  <RMV2_x0020_Converter_x0020_v2.0>
+    <FileName>half.hpp</FileName>
+    <ErrorCode>V564</ErrorCode>
+    <Message>The '&amp;' operator is applied to bool type value. You've probably forgotten to include parentheses or intended to use the '&amp;&amp;' operator.</Message>
+    <CodePrev>3373059687</CodePrev>
+    <CodeCurrent>1582582021</CodeCurrent>
+    <CodeNext>563922028</CodeNext>
+  </RMV2_x0020_Converter_x0020_v2.0>
+  <RMV2_x0020_Converter_x0020_v2.0>
+    <FileName>half.hpp</FileName>
+    <ErrorCode>V564</ErrorCode>
+    <Message>The '&amp;' operator is applied to bool type value. You've probably forgotten to include parentheses or intended to use the '&amp;&amp;' operator.</Message>
+    <CodePrev>3373059687</CodePrev>
+    <CodeCurrent>2052189254</CodeCurrent>
+    <CodeNext>563922028</CodeNext>
+  </RMV2_x0020_Converter_x0020_v2.0>
+  <RMV2_x0020_Converter_x0020_v2.0>
+    <FileName>half.hpp</FileName>
+    <ErrorCode>V550</ErrorCode>
+    <Message>An odd precise comparison: lfrom == to. It's probably better to use a comparison with defined precision: fabs(A - B) &lt; Epsilon.</Message>
+    <CodePrev>3063423444</CodePrev>
+    <CodeCurrent>2700669523</CodeCurrent>
+    <CodeNext>836373036</CodeNext>
+  </RMV2_x0020_Converter_x0020_v2.0>
+  <RMV2_x0020_Converter_x0020_v2.0>
+    <FileName>half.hpp</FileName>
+    <ErrorCode>V524</ErrorCode>
+    <Message>It is odd that the body of 'fabs' function is fully equivalent to the body of 'abs' function.</Message>
+    <CodePrev>1546231771</CodePrev>
+    <CodeCurrent>2605140974</CodeCurrent>
+    <CodeNext>3143584750</CodeNext>
+  </RMV2_x0020_Converter_x0020_v2.0>
+  <RMV2_x0020_Converter_x0020_v2.0>
+    <FileName>half.hpp</FileName>
+    <ErrorCode>V524</ErrorCode>
+    <Message>It is odd that the body of 'fabs' function is fully equivalent to the body of 'abs' function.</Message>
+    <CodePrev>2605140974</CodePrev>
+    <CodeCurrent>3143584750</CodeCurrent>
+    <CodeNext>0</CodeNext>
+  </RMV2_x0020_Converter_x0020_v2.0>
+  <RMV2_x0020_Converter_x0020_v2.0>
+    <FileName>half.hpp</FileName>
+    <ErrorCode>V524</ErrorCode>
+    <Message>It is odd that the body of 'rint' function is fully equivalent to the body of 'nearbyint' function.</Message>
+    <CodePrev>586257949</CodePrev>
+    <CodeCurrent>3760869922</CodeCurrent>
+    <CodeNext>3760869986</CodeNext>
+  </RMV2_x0020_Converter_x0020_v2.0>
+  <RMV2_x0020_Converter_x0020_v2.0>
+    <FileName>half.hpp</FileName>
+    <ErrorCode>V524</ErrorCode>
+    <Message>It is odd that the body of 'rint' function is fully equivalent to the body of 'nearbyint' function.</Message>
+    <CodePrev>3760869922</CodePrev>
+    <CodeCurrent>3760869986</CodeCurrent>
+    <CodeNext>0</CodeNext>
+  </RMV2_x0020_Converter_x0020_v2.0>
+  <RMV2_x0020_Converter_x0020_v2.0>
+    <FileName>half.hpp</FileName>
+    <ErrorCode>V524</ErrorCode>
+    <Message>It is odd that the body of 'scalbn' function is fully equivalent to the body of 'ldexp' function.</Message>
+    <CodePrev>3969560227</CodePrev>
+    <CodeCurrent>711093368</CodeCurrent>
+    <CodeNext>712141944</CodeNext>
+  </RMV2_x0020_Converter_x0020_v2.0>
+  <RMV2_x0020_Converter_x0020_v2.0>
+    <FileName>half.hpp</FileName>
+    <ErrorCode>V524</ErrorCode>
+    <Message>It is odd that the body of 'scalbn' function is fully equivalent to the body of 'ldexp' function.</Message>
+    <CodePrev>711093368</CodePrev>
+    <CodeCurrent>712141944</CodeCurrent>
+    <CodeNext>0</CodeNext>
+  </RMV2_x0020_Converter_x0020_v2.0>
+  <RMV2_x0020_Converter_x0020_v2.0>
+    <FileName>half.hpp</FileName>
+    <ErrorCode>V562</ErrorCode>
+    <Message>It's odd to compare a bool type value with a value of -_.</Message>
+    <CodePrev>4039283488</CodePrev>
+    <CodeCurrent>3753187245</CodeCurrent>
+    <CodeNext>1475992224</CodeNext>
+  </RMV2_x0020_Converter_x0020_v2.0>
+  <RMV2_x0020_Converter_x0020_v2.0>
+    <FileName>pugixml.cpp</FileName>
+    <ErrorCode>V595</ErrorCode>
+    <Message>The '_items' pointer was utilized before it was verified against nullptr. Check lines: _, _.</Message>
+    <CodePrev>6279575</CodePrev>
+    <CodeCurrent>2740634594</CodeCurrent>
+    <CodeNext>0</CodeNext>
+  </RMV2_x0020_Converter_x0020_v2.0>
+  <RMV2_x0020_Converter_x0020_v2.0>
+    <FileName>pugixml.cpp</FileName>
+    <ErrorCode>V560</ErrorCode>
+    <Message>A part of conditional expression is always false: length &lt; _.</Message>
+    <CodePrev>0</CodePrev>
+    <CodeCurrent>20129218</CodeCurrent>
+    <CodeNext>0</CodeNext>
+  </RMV2_x0020_Converter_x0020_v2.0>
+  <RMV2_x0020_Converter_x0020_v2.0>
+    <FileName>pugixml.cpp</FileName>
+    <ErrorCode>V1004</ErrorCode>
+    <Message>The '_root' pointer was used unsafely after it was verified against nullptr. Check lines: _, _.</Message>
+    <CodePrev>0</CodePrev>
+    <CodeCurrent>1009205427</CodeCurrent>
+    <CodeNext>125</CodeNext>
+  </RMV2_x0020_Converter_x0020_v2.0>
+  <RMV2_x0020_Converter_x0020_v2.0>
+    <FileName>pugixml.cpp</FileName>
+    <ErrorCode>V1004</ErrorCode>
+    <Message>The '_root' pointer was used unsafely after it was verified against nullptr. Check lines: _, _.</Message>
+    <CodePrev>0</CodePrev>
+    <CodeCurrent>2787425551</CodeCurrent>
+    <CodeNext>125</CodeNext>
+  </RMV2_x0020_Converter_x0020_v2.0>
+  <RMV2_x0020_Converter_x0020_v2.0>
+    <FileName>pugixml.cpp</FileName>
+    <ErrorCode>V730</ErrorCode>
+    <Message>Not all members of a class are initialized inside the constructor. Consider inspecting: buffer, scratch.</Message>
+    <CodePrev>5816</CodePrev>
+    <CodeCurrent>2435737206</CodeCurrent>
+    <CodeNext>123</CodeNext>
+  </RMV2_x0020_Converter_x0020_v2.0>
+  <RMV2_x0020_Converter_x0020_v2.0>
+    <FileName>pugixml.cpp</FileName>
+    <ErrorCode>V690</ErrorCode>
+    <Message>The 'compact_pointer' class implements the '=' operator, but lacks a copy constructor. It is dangerous to use such a class.</Message>
+    <CodePrev>0</CodePrev>
+    <CodeCurrent>1517864504</CodeCurrent>
+    <CodeNext>123</CodeNext>
+  </RMV2_x0020_Converter_x0020_v2.0>
+  <RMV2_x0020_Converter_x0020_v2.0>
+    <FileName>pugixml.cpp</FileName>
+    <ErrorCode>V690</ErrorCode>
+    <Message>The 'compact_pointer_parent' class implements the '=' operator, but lacks a copy constructor. It is dangerous to use such a class.</Message>
+    <CodePrev>0</CodePrev>
+    <CodeCurrent>149076745</CodeCurrent>
+    <CodeNext>123</CodeNext>
+  </RMV2_x0020_Converter_x0020_v2.0>
+  <RMV2_x0020_Converter_x0020_v2.0>
+    <FileName>pugixml.cpp</FileName>
+    <ErrorCode>V690</ErrorCode>
+    <Message>The 'compact_string' class implements the '=' operator, but lacks a copy constructor. It is dangerous to use such a class.</Message>
+    <CodePrev>0</CodePrev>
+    <CodeCurrent>3767652186</CodeCurrent>
+    <CodeNext>123</CodeNext>
+  </RMV2_x0020_Converter_x0020_v2.0>
+</NewDataSet>
