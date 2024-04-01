@@ -400,7 +400,7 @@ bool Converter::LoadTextures()
 		HRESULT hr = CreateTexture(m_d3dDevice.Get(), m_mesh, modelNum, TextureID::t_albedo, &mat.diffuse);
 		if (FAILED(hr))
 		{
-			hr = CreateDDSTextureFromFile(m_d3dDevice.Get(), (m_execPath + L"\\data\\resources\\textures\\test_gray.dds").c_str(), nullptr, &mat.diffuse);
+			hr = CreateDDSTextureFromFile(m_d3dDevice.Get(), (m_execPath + L"\\data\\resources\\textures\\test_black.dds").c_str(), nullptr, &mat.diffuse);
 			if (FAILED(hr))
 				return false;
 		}
@@ -416,7 +416,7 @@ bool Converter::LoadTextures()
 		hr = CreateTexture(m_d3dDevice.Get(), m_mesh, modelNum, TextureID::t_specular, &mat.specular);
 		if (FAILED(hr))
 		{
-			hr = CreateDDSTextureFromFile(m_d3dDevice.Get(), (m_execPath + L"\\data\\resources\\textures\\test_gray.dds").c_str(), nullptr, &mat.specular);
+			hr = CreateDDSTextureFromFile(m_d3dDevice.Get(), (m_execPath + L"\\data\\resources\\textures\\test_black.dds").c_str(), nullptr, &mat.specular);
 			if (FAILED(hr))
 				return false;
 		}
@@ -424,7 +424,7 @@ bool Converter::LoadTextures()
 		hr = CreateTexture(m_d3dDevice.Get(), m_mesh, modelNum, TextureID::t_gloss_map, &mat.gloss_map);
 		if (FAILED(hr))
 		{
-			hr = CreateDDSTextureFromFile(m_d3dDevice.Get(), (m_execPath + L"\\data\\resources\\textures\\test_gray.dds").c_str(), nullptr, &mat.gloss_map);
+			hr = CreateDDSTextureFromFile(m_d3dDevice.Get(), (m_execPath + L"\\data\\resources\\textures\\test_black.dds").c_str(), nullptr, &mat.gloss_map);
 			if (FAILED(hr))
 				return false;
 		}

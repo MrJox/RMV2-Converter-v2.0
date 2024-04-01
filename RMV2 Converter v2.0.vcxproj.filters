@@ -16,6 +16,12 @@
     <Filter Include="shaders">
       <UniqueIdentifier>{2a090e87-3f91-4502-a6aa-c6a7d08e5104}</UniqueIdentifier>
     </Filter>
+    <Filter Include="resources">
+      <UniqueIdentifier>{1f803be8-d7ed-47bf-a36f-263ab882a72f}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="resources\textures">
+      <UniqueIdentifier>{697c9f4d-4521-4e9a-a10b-a1db5336f60a}</UniqueIdentifier>
+    </Filter>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="resource.h">
@@ -112,6 +118,12 @@
   <ItemGroup>
     <Image Include="icon.ico">
       <Filter>Resource Files</Filter>
+    </Image>
+    <Image Include="data\resources\textures\flatnormal.dds">
+      <Filter>resources\textures</Filter>
+    </Image>
+    <Image Include="data\resources\textures\test_black.dds">
+      <Filter>resources\textures</Filter>
     </Image>
   </ItemGroup>
 </Project>
